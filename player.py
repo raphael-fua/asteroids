@@ -38,44 +38,27 @@ class Player(CircleShape):
         self.shoot_keys = shoot_keys
 
     def triangle(self) -> list[pygame.Vector2]:
+        # Isosceles triangle inscribed exactly in the circle at (self.position, self.radius):
+        # the nose plus two base vertices symmetric about the forward axis, all at distance
+        # self.radius from self.position by construction.
+        spread = 40  # degrees; controls how narrow/wide the base vertices sit from the nose
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
-        right = pygame.Vector2(0, 1).rotate(self.rotation + 90) * self.radius / 1.5
-        nose = forward * self.radius * 0.85
-        a = self.position + nose
-        b = self.position - nose - right
-        c = self.position - nose + right
+        a = self.position + forward * self.radius
+        b = self.position + forward.rotate(180 - spread) * self.radius
+        c = self.position + forward.rotate(-(180 - spread)) * self.radius
         return [a, b, c]
-
-    def circumcircle(self) -> tuple[pygame.Vector2, float]:
-        # Cartesian circumcenter formula: en.wikipedia.org/wiki/Circumcircle
-        a, b, c = self.triangle()
-        ax, ay = a.x, a.y
-        bx, by = b.x, b.y
-        cx, cy = c.x, c.y
-        d = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by))
-        ux = (
-            (ax**2 + ay**2) * (by - cy)
-            + (bx**2 + by**2) * (cy - ay)
-            + (cx**2 + cy**2) * (ay - by)
-        ) / d
-        uy = (
-            (ax**2 + ay**2) * (cx - bx)
-            + (bx**2 + by**2) * (ax - cx)
-            + (cx**2 + cy**2) * (bx - ax)
-        ) / d
-        center = pygame.Vector2(ux, uy)
-        radius = center.distance_to(a)
-        return center, radius
 
     def draw(self, screen: pygame.Surface) -> None:
         pygame.draw.polygon(
             surface=screen,
             color=self.color,
             points=self.triangle(),
-            width=LINE_WIDTH
+            width=0
         )
-        center, radius = self.circumcircle()
-        pygame.draw.circle(screen, self.color, center, radius * 1.15, LINE_WIDTH)
+        # Empirically tuned: pygame.draw.polygon (fill) and pygame.draw.circle (stroke) each
+        # round the exact triangle/circle geometry to pixels differently, so a small margin
+        # on top of self.radius is needed to reliably cover the corners.
+        pygame.draw.circle(screen, self.color, self.position, self.radius + 2.0, 2)
 
     def rotate(self, dt):
         self.rotation += PLAYER_TURN_SPEED * dt
