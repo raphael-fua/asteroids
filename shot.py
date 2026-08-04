@@ -1,6 +1,7 @@
 import pygame
 from circleshape import CircleShape
 from constants import SHOT_RADIUS, LINE_WIDTH
+from logger import log_event
 
 class Shot(CircleShape):
 
@@ -15,6 +16,9 @@ class Shot(CircleShape):
 
     def update(self, dt: float) -> None:
         self.position += self.velocity * dt
+        if self.is_off_screen():
+            log_event("shot_despawned")
+            self.kill()
 
 
 

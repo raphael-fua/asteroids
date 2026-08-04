@@ -40,10 +40,32 @@ class Player(CircleShape):
     def triangle(self) -> list[pygame.Vector2]:
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
         right = pygame.Vector2(0, 1).rotate(self.rotation + 90) * self.radius / 1.5
-        a = self.position + forward * self.radius
-        b = self.position - forward * self.radius - right
-        c = self.position - forward * self.radius + right
+        nose = forward * self.radius * 0.85
+        a = self.position + nose
+        b = self.position - nose - right
+        c = self.position - nose + right
         return [a, b, c]
+
+    def circumcircle(self) -> tuple[pygame.Vector2, float]:
+        # Cartesian circumcenter formula: en.wikipedia.org/wiki/Circumcircle
+        a, b, c = self.triangle()
+        ax, ay = a.x, a.y
+        bx, by = b.x, b.y
+        cx, cy = c.x, c.y
+        d = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by))
+        ux = (
+            (ax**2 + ay**2) * (by - cy)
+            + (bx**2 + by**2) * (cy - ay)
+            + (cx**2 + cy**2) * (ay - by)
+        ) / d
+        uy = (
+            (ax**2 + ay**2) * (cx - bx)
+            + (bx**2 + by**2) * (ax - cx)
+            + (cx**2 + cy**2) * (bx - ax)
+        ) / d
+        center = pygame.Vector2(ux, uy)
+        radius = center.distance_to(a)
+        return center, radius
 
     def draw(self, screen: pygame.Surface) -> None:
         pygame.draw.polygon(
@@ -52,6 +74,8 @@ class Player(CircleShape):
             points=self.triangle(),
             width=LINE_WIDTH
         )
+        center, radius = self.circumcircle()
+        pygame.draw.circle(screen, self.color, center, radius * 1.15, LINE_WIDTH)
 
     def rotate(self, dt):
         self.rotation += PLAYER_TURN_SPEED * dt
