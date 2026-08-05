@@ -17,3 +17,12 @@ Options to revisit:
 - Bump resolution only, and accept the pacing/difficulty change.
 - Leave resolution as-is and address the blur another way (e.g. change `SCALED`
   filtering/quality, or render at native resolution instead of a fixed logical surface).
+
+
+## Shot restrictions
+
+In its current form, the player has no reason not to shoot constantly. 
+
+Should be able to run out of bullets
+
+in which case he should have to wait for the next 'delivery' of bullets.

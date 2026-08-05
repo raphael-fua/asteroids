@@ -7,7 +7,13 @@ from constants import SCREEN_WIDTH, SCREEN_HEIGHT
 class CircleShape(pygame.sprite.Sprite):
     containers: tuple[pygame.sprite.Group, ...]
 
-    def __init__(self, x: float, y: float, radius: float, color: str = "white") -> None:
+    def __init__(
+        self,
+        x: float,
+        y: float,
+        radius: float,
+        color: str | tuple[int, int, int] = "white",
+    ) -> None:
         # we will be using this later
         if hasattr(self, "containers"):
             super().__init__(*self.containers)

@@ -1,17 +1,17 @@
 import pygame
 from circleshape import CircleShape
-from constants import LINE_WIDTH, ASTEROID_MIN_RADIUS, ASTEROID_MAX_RADIUS
+from constants import ASTEROID_MIN_RADIUS, ASTEROID_MAX_RADIUS
+from claude_generated.asteroid_colors import random_asteroid_color
 from logger import log_event
 import random
 
 
-
 class Asteroid(CircleShape):
     def __init__(self, x: float, y: float, radius: float) -> None:
-        super().__init__(x, y, radius)
+        super().__init__(x, y, radius, random_asteroid_color())
 
     def draw(self, screen: pygame.Surface) -> None:
-        pygame.draw.circle(screen, "white", self.position, self.radius, LINE_WIDTH)
+        pygame.draw.circle(screen, self.color, self.position, self.radius, 0)
 
     def update(self, dt: float) -> None:
         self.position += self.velocity * dt

@@ -6,7 +6,7 @@ from logger import log_event
 class Shot(CircleShape):
 
 
-    def __init__(self, x: float, y: float, color: str = "white") -> None:
+    def __init__(self, x: float, y: float, color: str | tuple[int, int, int] = "white") -> None:
         super().__init__(x, y, SHOT_RADIUS, color)
 
 
