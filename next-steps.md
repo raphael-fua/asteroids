@@ -19,10 +19,14 @@ Options to revisit:
   filtering/quality, or render at native resolution instead of a fixed logical surface).
 
 
-## Shot restrictions
+## Shot restrictions — done
 
-In its current form, the player has no reason not to shoot constantly. 
+Players now start with `PLAYER_START_AMMO` bullets and spend one per shot; at zero the
+fire key does nothing. The 'delivery' is the croix de Lorraine pickup, which drifts in
+from a screen edge like an asteroid and is claimed by touching it or shooting it.
 
-Should be able to run out of bullets
-
-in which case he should have to wait for the next 'delivery' of bullets.
+Still open, once it has been played:
+- `BONUS_SPAWN_RATE_SECONDS` (10 s) and `PLAYER_START_AMMO` (20 shots is only ~6 s of
+  continuous fire) are guesses and will want tuning.
+- Invulnerability after a hit lasts 1.5 s but has no visual, so neither player can see
+  why a shot passed through. A blink in `Player.draw` is the obvious fix.

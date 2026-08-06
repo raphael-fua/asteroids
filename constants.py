@@ -18,3 +18,23 @@ ASTEROID_SPAWN_RATE_SECONDS_SOLO = 1.0
 ASTEROID_MAX_RADIUS = ASTEROID_MIN_RADIUS * ASTEROID_KINDS
 
 SHOT_RADIUS = 5
+
+PLAYER_START_HEALTH = 3
+PLAYER_MAX_HEALTH = 3
+PLAYER_INVULNERABLE_SECONDS = 1.5
+# How far the ship fades towards white at 1 health. Short of 1.0, so a badly hurt red
+# ship and a badly hurt blue one are still told apart at a glance.
+PLAYER_PALE_AT_LOW_HEALTH = 0.65
+
+PLAYER_START_AMMO = 20
+PLAYER_MAX_AMMO = 40
+
+BONUS_RADIUS = 25
+BONUS_SPEED = 45  # slower than asteroids (40-100), so pickups linger and can be chased
+BONUS_HEALTH_AMOUNT = 1
+BONUS_AMMO_AMOUNT = 10
+BONUS_SPAWN_RATE_SECONDS = 10.0
+BONUS_HEALTH_CHANCE = 0.2  # health crosses are much rarer than ammo: 1 spawn in 5
+
+HUD_FONT_SIZE = 32  # half the 64 used by the start and game-over screens
+HUD_MARGIN = 16

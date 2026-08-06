@@ -15,6 +15,9 @@ from asteroidfield import AsteroidField
 from shot import Shot
 from claude_generated.starfield import Starfield
 from claude_generated.game_flow import show_start_screen, show_game_over_screen
+from claude_generated.bonus_asteroid import HealthAsteroid, AmmoAsteroid
+from claude_generated.bonus_field import BonusField
+from claude_generated.hud import Hud
 
 # def main():
 #     print(f"Starting Asteroids with pygame version: {pygame.version.ver}")
@@ -27,16 +30,32 @@ from claude_generated.game_flow import show_start_screen, show_game_over_screen
 #
 #     clock = pygame.time.Clock()
 
+def resolve_shot_hits(shooter: Player, target: Player) -> None:
+    """Applies at most one of `shooter`'s shots to `target` this frame, so a burst
+    arriving together costs one point of health rather than one per shot.
+    """
+    if target.is_invulnerable():
+        return  # shots pass through, rather than vanishing against an untouchable ship
+    for shot in shooter.shots_group:
+        if shot.collides_with(target):
+            shot.kill()
+            target.take_damage()
+            log_event("player_shot", shooter=shooter.name, target=target.name)
+            return
+
+
 def run_game(
     screen: pygame.Surface,
     clock: pygame.time.Clock,
     num_players: int,
     starfield: Starfield,
+    hud: Hud,
 ) -> tuple[str, Player | None]:
     """Plays one round. Returns ("quit", None) or ("game_over", winner-or-None)."""
     dt = 0.0
 
     asteroids = pygame.sprite.Group()
+    bonuses   = pygame.sprite.Group()
     updatable = pygame.sprite.Group()
     drawable  = pygame.sprite.Group()
     shots     = pygame.sprite.Group()
@@ -44,6 +63,11 @@ def run_game(
     Shot.containers = (shots, updatable, drawable)
 
     Asteroid.containers = (asteroids, updatable, drawable)
+
+    # Load-bearing: without their own containers the bonus subclasses would inherit
+    # Asteroid's and land in `asteroids`, where they would be treated as lethal rocks.
+    HealthAsteroid.containers = (bonuses, updatable, drawable)
+    AmmoAsteroid.containers = (bonuses, updatable, drawable)
 
     Player.containers = (updatable, drawable)
     player1_x = SCREEN_WIDTH / 2.0 if num_players == 1 else SCREEN_WIDTH / 4.0
@@ -71,6 +95,9 @@ def run_game(
     spawn_rate = ASTEROID_SPAWN_RATE_SECONDS if num_players == 2 else ASTEROID_SPAWN_RATE_SECONDS_SOLO
     AsteroidField(spawn_rate)
 
+    BonusField.containers = (updatable,)
+    BonusField()
+
 
     #THE GAME LOOP
     while True:
@@ -86,32 +113,52 @@ def run_game(
         for asteroid in asteroids:
             for hit_player in players:
                 if hit_player.collides_with(asteroid):
-                    log_event("player_hit", player=hit_player.name)
-                    winner = None
-                    if player2 is not None:
-                        winner = player1 if hit_player is player2 else player2
-                    return ("game_over", winner)
+                    # An invulnerable player passes straight through, rock intact.
+                    if hit_player.take_damage():
+                        asteroid.split()
+                    break
+            if not asteroid.alive():
+                continue  # already split: splitting it again would spawn four children
             for shot in shots:
                 if asteroid.collides_with(shot):
                     log_event("asteroid_shot")
                     asteroid.split()
                     shot.kill()
+                    break
+
+        for bonus in bonuses:
+            # Touching beats shooting, so a same-frame tie goes to physical contact.
+            claimer = next((p for p in players if p.collides_with(bonus)), None)
+            if claimer is None:
+                for player in players:
+                    # Iterating a player's own shots is what identifies the owner.
+                    hit = next(
+                        (s for s in player.shots_group if s.collides_with(bonus)), None
+                    )
+                    if hit is not None:
+                        hit.kill()
+                        claimer = player
+                        break
+            if claimer is not None:
+                bonus.claim(claimer)
 
         if player2 is not None:
-            for shot in player1.shots_group:
-                if shot.collides_with(player2):
-                    log_event("player_hit", player=player2.name)
-                    return ("game_over", player1)
+            resolve_shot_hits(player1, player2)
+            resolve_shot_hits(player2, player1)
 
-            for shot in player2.shots_group:
-                if shot.collides_with(player1):
-                    log_event("player_hit", player=player1.name)
-                    return ("game_over", player2)
+        dead = [p for p in players if not p.is_alive()]
+        if dead:
+            log_event("round_over", dead=[p.name for p in dead])
+            if player2 is None or len(dead) == 2:
+                return ("game_over", None)
+            return ("game_over", player1 if dead[0] is player2 else player2)
 
         for drawable_item in drawable:
                 drawable_item.draw(screen)
 
-        pygame.display.flip()  
+        hud.draw(screen, players)  # last, so the text sits above every sprite
+
+        pygame.display.flip()
 
 
         dt = clock.tick(60) / 1000.0  
@@ -134,13 +181,14 @@ def main():
     )
     clock = pygame.time.Clock()
     starfield = Starfield()
+    hud = Hud()
 
     num_players = show_start_screen(screen, clock, starfield)
     if num_players is None:
         return
 
     while True:
-        outcome, winner = run_game(screen, clock, num_players, starfield)
+        outcome, winner = run_game(screen, clock, num_players, starfield, hud)
         if outcome == "quit":
             return
         if not show_game_over_screen(screen, clock, winner, starfield):
